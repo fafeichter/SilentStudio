@@ -8,10 +8,10 @@
 import SwiftUI
 import Charts
 
-var sensorlist = ["TT0D", "TT1D", "Tp02"]
+var sensorlist = ["Tp02"]
 var fanlist = ["F0Ac", "F1Ac"]
 
-let AUTO_RPM = 1330
+let AUTO_RPM = 1000
 
 func setFan(_ rpm: String) {
     do {
@@ -69,7 +69,7 @@ class HWStatus: ObservableObject {
     @Published var checkIntervall: Double = 5.0
     @Published var currentTemp: Float = 0.0
     @Published var currentRpm: Float = 0.0
-    @AppStorage("targetrpm") var targetrpm: [Float:Int?] = [0.0:0, 45.0:0, 65.0:nil] {
+    @AppStorage("targetrpm") var targetrpm: [Float:Int?] = [0.0:0, 80.0:0, 90.0:nil] {
         willSet { DispatchQueue.main.async { self.objectWillChange.send() }}
     }
     @AppStorage("automatic") var automatic = true {
@@ -95,10 +95,10 @@ class HWStatus: ObservableObject {
             self.currentTemp = try sensorlist.reduce(0.0,{ result, sensor in max(result, try HWStatus.connection.read(sensor))})
             if automatic {
                 let x = self.targetrpm.keys.sorted(by: <).last(where: {$0 <= self.currentTemp})
-                
+
                 if let x {
                     print(now, "set start temp")
-                    setFan(targetrpm[x]! == nil ? "AUTO" : String( targetrpm[x]!! ) )
+                    setFan("0")
                     self.lasttemp = x
                 }
             }
@@ -156,13 +156,13 @@ struct MenuView: View {
             ForEach(state.measurementHistory.measurements.indices, id:\.self) { idx in
                 ForEach(state.measurementHistory.measurements[idx].temperatures.sorted(by:<), id:\.key) { sensor, temp in
                     LineMark(x: .value("Time", state.measurementHistory.measurements[idx].time), y: .value("Temp", temp))
-                        .foregroundStyle(by: .value("type", sensor))
                 }
             }
         }
-        .chartYScale(domain: 30...70)
-        .frame(minWidth:300, minHeight:150).padding(16)
-        
+        .foregroundColor(.orange)
+        .chartYScale(domain: 30...90)
+        .frame(minWidth:275, minHeight:150).padding(16)
+
         Text("Fan speed in rpm")
         Chart() {
             ForEach(state.measurementHistory.measurements.indices, id:\.self) { idx in
@@ -171,10 +171,10 @@ struct MenuView: View {
             }
         }
         .foregroundColor(.blue)
-        .chartYScale(domain: 0...2000)
-        .frame(minWidth:300, minHeight:100).padding(16)
+        .chartYScale(domain: 0...1500)
+        .frame(minWidth:275, minHeight:100).padding(16)
 
-        Text("Temperature/rpm points")
+        Text("Temperature/rpm points").padding([.bottom], 16)
         ForEach(state.targetrpm.keys.sorted(by: <), id:\.self) { key in
             HStack {
                 Text(String(key))
@@ -196,33 +196,16 @@ struct MenuView: View {
                 state.targetrpm[temp] = rpm
                 //state.chartRpm = Dictionary(uniqueKeysWithValues: state.targetrpm.map() { key, value in if value == "AUTO" { return (key,1330) } else { return (key,Int(value) ?? 0) }} )
             }) {
-                    Image(systemName: "plus.square.fill").renderingMode(.original).imageScale(.large)
-                }.buttonStyle(.plain)
-        }.padding([.leading,.trailing],16)
-        Chart() {
-            ForEach(state.targetrpm.keys.sorted(by: <), id:\.self) { key in
-                LineMark(x: .value("Temp", key), y: .value("Rpm", state.targetrpm[key]! ?? AUTO_RPM)).interpolationMethod(.stepEnd).lineStyle(StrokeStyle(lineWidth:3,lineCap: .round, lineJoin: .round))
-            }.foregroundStyle(by: .value("way", "up"))
-            
-            ForEach(state.targetrpm.keys.sorted(by: <), id: \.self) { key in
-                LineMark(x: .value("Temp", key), y: .value("Rpm", state.targetrpm[key]! ?? AUTO_RPM)).interpolationMethod(.stepStart).lineStyle(StrokeStyle(lineWidth:3,lineCap: .round, lineJoin: .round))
-            }.foregroundStyle(by: .value("way", "down"))
-            PointMark(x: .value("Temp", state.currentTemp), y: .value("Rpm", state.currentRpm)).foregroundStyle(by: .value("way", "current"))
-                .annotation() {
-                    VStack {
-                        HStack {
-                            Image(systemName: "thermometer.medium")
-                            Text(String(format: "%.1f", state.currentTemp))
-                        }
-                        HStack {
-                            Image(systemName: "fanblades")
-                            Text(String(format: "%.0f", state.currentRpm))
-                        }
-                    }
-                }
-        }.frame(minWidth:300, minHeight:100).padding(16)
-            .chartXScale(domain: 30...70)
-            .chartYScale(domain: 0...2000)
+                Image(systemName: "plus.square.fill").renderingMode(.original).imageScale(.large)
+            }.buttonStyle(.plain)
+        }.padding([.leading,.trailing, .bottom],16)
+
+        Button("Quit") {
+            setFan("AUTO")
+            NSApplication.shared.terminate(nil)
+        }
+        .keyboardShortcut("q")
+         .frame(minWidth:275).padding([.bottom], 8)
     }
 }
 
@@ -232,35 +215,9 @@ struct SilentMenuApp: App {
 
     var body: some Scene {
         MenuBarExtra {
-            Toggle(isOn: $state.automatic) {
-                Text("Fan automatic")
-            }.keyboardShortcut("a")
-            Divider()
-            Button("Fan off") {
-                setFan("0")
-                state.lasttemp = 0.0
-            }
-            .keyboardShortcut("0")
-            Button("Fan on") {
-                setFan("AUTO")
-                state.lasttemp = 200.0
-            }
-            .keyboardShortcut("1")
-            Divider()
-            Button("Quit") {
-                setFan("AUTO")
-                NSApplication.shared.terminate(nil)
-            }
-            .keyboardShortcut("q")
-        } label: {
-            Image(systemName: "fanblades")
-            Text(String(format: "%.0f", state.currentRpm))
-        }
-        MenuBarExtra {
-            MenuView(state: state).frame(minHeight: 750)
+            MenuView(state: state).frame(minHeight: 550)
         } label: {
             Image(systemName: "thermometer.medium")
-            Text(String(format: "%.1f", state.currentTemp))
         }.menuBarExtraStyle(.window)
     }
 }

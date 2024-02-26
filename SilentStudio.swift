@@ -26,9 +26,9 @@ struct SilentStudio {
         var checkinterval = 30.0
         var targetrpm: [Float: String] = [:]
         targetrpm[0.0]="0"
-        targetrpm[50.0]="0"
-        targetrpm[60.0]="AUTO"
-        var sensorlist = ["TT0D", "TT1D", "Tp02"]
+        targetrpm[80.0]="0"
+        targetrpm[90.0]="AUTO"
+        var sensorlist = ["Tp02"]
         
         dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         

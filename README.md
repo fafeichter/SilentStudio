@@ -1,7 +1,13 @@
 # SilentStudio
-Set fan speed of Mac Studio
+Set fan speed of Mac Studio.
 
-<img width="322" alt="MenuBarExtra" src="https://user-images.githubusercontent.com/39700157/218793527-8b33418e-9326-40dc-b05a-9b290903860c.png">
+> :warning: Apple's default fan speeds of 1300 rpm (1st generation) and 1000 rpm (2nd generation) for the Studio are
+> set very cautious. Apple lets the same SoC's used in the Studio to go to around 104° Celsius (M2) and 108° Celsius
+> (M3) in their MacBook Pro's ([source](https://youtu.be/uxyGSSu9Q9I?si=JaYaiFcUIJzUay7p&t=625)). Mac Studio's passive
+> cooling is so good that it's feasible to **disable the fan completely most of the time** without reaching the
+> critical limit of 100° Celsius.
+
+![Menu screenshot](Menu_Screenshot.png)
 
 ## Installation instructions
 
@@ -25,12 +31,12 @@ Inside terminal:
 usage: SilentStudio [--] [<temp> <rpm>]* [-d] [-h] [-i <sec>] [-s <sensor>*]
 
   options
-  <temp> <rpm>     Pair(s) of temperature and rpm. "AUTO" for automatic setting. Default: [(key: 0.0, value: "0"), (key: 50.0, value: "0"), (key: 60.0, value: "AUTO")]
+  <temp> <rpm>     Pair(s) of temperature and rpm. "AUTO" for automatic setting. Default: [(key: 0.0, value: "0"), (key: 80.0, value: "0"), (key: 90.0, value: "AUTO")]
   -d               Debug mode. List every value read and written
   -f <rpm>         Set fans to rpm and exit
   -h               This help text
   -i <sec>         Checks every <sec> seconds. Default: 30.0
-  -s <sensor>*     List of sensors to read. Default: ["TT0D", "TT1D", "TT2D"]
+  -s <sensor>*     List of sensors to read. Default: ["Tp02"]
           
  Program will run in an endless loop. Use ctrl-c to stop. Fans will be resetted to AUTO mode.
 ```
@@ -46,20 +52,20 @@ Stop the script with ctrl-c. It will reset both fans to "AUTO" mode.
 
 ## How does it work?
 The script uses a small dictionary `targetrpm`to set the rpm values of both fans inside the Mac Studio whenever a temperature "border" has been crossed.
-The default setting switches the fan off for temperatures below 50°C and switches to "AUTO" mode whenever the temperature crosses 60°C. "AUTO" is the builtin standard behaviour. It always seems to be in the range from 1320-1330 rpm. The temperature is checked every 30 seconds.
+The default setting switches the fan off for temperatures below 80°C and switches to "AUTO" mode whenever the temperature crosses 90°C. "AUTO" is the builtin standard behaviour. It always seems to be in the range from 1000-1015 rpm. The temperature is checked every 30 seconds.
 
 | Temperature in °C| rpm |
 | ----------- | --- |
 | 0 | 0 |
-| 50 | 0 |
-| 60 | AUTO |
+| 80 | 0 |
+| 90 | AUTO |
 
 ## How to change default behaviour?
 Use the commandline arguments described above:
  - with `-i` you can change the `checkinterval`
  - with `-s` you can change the sensors 
  - with `-d` you can switch on debug mode (will log every value read and written from/to SMC)
- - arguments without a flag define the temperature curve. Please notice that in a list of e.g `0 0 50 0 60 AUTO` the temperature 50°C will be used to switch the fans of, regardless if the temperature is currently falling or rising. This way there is a bulitin hysteresis. 
+ - arguments without a flag define the temperature curve. Please notice that in a list of e.g `0 0 80 0 90 AUTO` the temperature 80°C will be used to switch the fans of, regardless if the temperature is currently falling or rising. This way there is a bulitin hysteresis. 
 
 # Disclaimer
 Use on your own risk. Don't use with CPU/GPU intensive tasks.
