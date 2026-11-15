@@ -89,9 +89,8 @@ fastlane/test_output
 
 iOSInjectionProject/
 
-# AppCode
+# IntelliJ
 .idea/
 
-# Binaries
-SilentStudio
-SilentStudioMenu
+# App Bundle
+SilentStudio.app
